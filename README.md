@@ -37,7 +37,10 @@ the ```auto_set```function is defined as follows:
 # allow_nonfree: whether use non-empty gpu when there is no enough of them.
 # ask: if is set to true, the script will ask for a confirmation when using non empty gpu. if false, it will use the non empty gpu directly.
 # blacklist: a list of int, the gpu in this list will not be used unless you mannuly choose them.
+# show: if set to true, it will show which gpu is currently using.
 def auto_set(num, allow_nonfree=True, ask=True, blacklist=[], show=True):
 	# some code here.
 ```
 
+## ps:
+you can get more detailed via accessing gpuutil.GPUStat class, for more information, just look the code.
