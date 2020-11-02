@@ -43,4 +43,5 @@ def auto_set(num, allow_nonfree=True, ask=True, blacklist=[], show=True):
 ```
 
 ## ps:
-you can get more detailed via accessing gpuutil.GPUStat class, for more information, just look the code.
+1. you can get more detailed gpu info via accessing gpuutil.GPUStat class, for more information, just look the code.
+2. Since it use ps command to get detailed process info, it can only be used on linux.
