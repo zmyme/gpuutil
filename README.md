@@ -28,7 +28,7 @@ where options can either be "brief" or "detail", and you will get something like
 3. To auto set visible gpu in your python code, just use the following python code.
 ```python
 from gpuutil import auto_set
-autoset(1)
+auto_set(1)
 ```
 
 the ```auto_set```function is defined as follows:
