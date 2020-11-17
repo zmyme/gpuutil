@@ -132,32 +132,6 @@ def short_gpu_info(stat, disp_type='brief'):
         info += '  '
         info += process_info
     return info
-
-def show_gpu_info_v2(stat, disp_type='brief'):
-    # for gpu information.
-    stats = {
-        "id": stat['id'],
-        "fan": stat['fan_speed'].split(' ')[0].strip(),
-        "temp_cur": stat['temperature']['current'].split(' ')[0].strip(),
-        "temp_max": stat['temperature']['max'].split(' ')[0].strip(),
-        "power_cur": stat['power']['current'].split(' ')[0].strip(),
-        "power_max": stat['power']['max'].split(' ')[0].strip(),
-        "clock_cur": stat['clocks']['current'].split(' ')[0].strip(),
-        "clock_max": stat['clocks']['max'].split(' ')[0].strip(),
-        "util": stat['utilization'],
-        "mem_used": stat['memory']['used'].split(' ')[0].strip(),
-        "mem_total": stat['memory']['total'].split(' ')[0].strip(),
-        "mem_free": stat['memory']['free'].split(' ')[0].strip()
-    }
-
-    gpu_stat_fmt = "{id} | {fan} | {temp_cur} | {power_cur} | {clock_cur} | {util} | {mem_used}/{mem_all}"
-    info = gpu_stat_fmt
-    for key in stats:
-        placeholder = '{%s}'%key
-        if info.find(placeholder) != -1:
-            info.replace(placeholder, stats[key])
-    return info
-    
     
 
 def get_basic_process_info_linux():
@@ -193,6 +167,51 @@ def get_basic_process_info_windows():
             "command": name
         }
     return processes
+
+def draw_table(table, header_line = 0, c_align = 'r', h_align='c', delemeter = ' | ', joint_delemeter = '-+-'):
+    # calculate max lengths.
+    num_columns = len(table[0])
+    def cvt_align(align, num_columns):
+        if type(align) is str:
+            if len(align) == 1:
+                return [align] * num_columns
+            elif len(align) == num_columns:
+                return list(align)
+            else:
+                raise ValueError('align flag length mismatch')
+        else:
+            return align
+    c_align = cvt_align(c_align, num_columns)
+    h_align = cvt_align(h_align, num_columns)
+    max_lengths = [0] * num_columns
+    for row in table:
+        for i, col in enumerate(row):
+            if len(col) > max_lengths[i]:
+                max_lengths[i] = len(col)
+    width = sum(max_lengths) + num_columns * len(delemeter) + 1
+    hline = '+'
+    hline += joint_delemeter.join(['-' * length for length in max_lengths])
+    hline += '+\n'
+    info =  hline
+    for i, row in enumerate(table):
+        info += '|'
+        row_just = []
+        align = h_align if i <= header_line else c_align
+        for w, col, a in zip(max_lengths, row, align):
+            if a == 'c':
+                row_just.append(col.center(w))
+            elif a == 'l':
+                row_just.append(col.ljust(w))
+            elif a == 'r':
+                row_just.append(col.rjust(w))
+        info += delemeter.join(row_just)
+        info += '|\n'
+        if i == header_line:
+            info += hline
+    info +=  hline
+    return info
+    
+
 
 class GPUStat():
     def __init__(self):
@@ -236,31 +255,83 @@ class GPUStat():
             gpu['id'] = i
             self.gpus.append(gpu)
 
-    def show(self, disp_type='brief', command=True):
+    def show(self, enabled_cols = ['ID', 'Fan', 'Temp', 'Pwr', 'Freq', 'Util', 'Vmem', 'Users'], show_command=True):
         self.parse()
-        lines = [short_gpu_info(info, disp_type=disp_type) for info in self.gpus]
-        print('================== GPU INFO ==================')
-        print('\n'.join(lines))
-        if command:
-            print('================ PROCESS INFO ================')
+        gpu_infos = []
+        # stats = {
+        #     "id": stat['id'],
+        #     "fan": stat['fan_speed'].split(' ')[0].strip(),
+        #     "temp_cur":  stat['temperature']['current'].split(' ')[0].strip(),
+        #     "temp_max":  stat['temperature']['max'].split(' ')[0].strip(),
+        #     "power_cur": stat['power']['current'].split(' ')[0].strip(),
+        #     "power_max": stat['power']['max'].split(' ')[0].strip(),
+        #     "clock_cur": stat['clocks']['current'].split(' ')[0].strip(),
+        #     "clock_max": stat['clocks']['max'].split(' ')[0].strip(),
+        #     "util":      stat['utilization'],
+        #     "mem_used":  stat['memory']['used'].split(' ')[0].strip(),
+        #     "mem_total": stat['memory']['total'].split(' ')[0].strip(),
+        #     "mem_free":  stat['memory']['free'].split(' ')[0].strip()
+        # }
+        for gpu in self.gpus:
+            process_fmt = '{user}({pid})'
+            process_info = ','.join([process_fmt.format(
+                user = proc['user'],
+                pid = proc['pid']
+            ) for proc in gpu['processes']])
+            info_gpu = {
+                'ID': '{0}'.format(str(gpu['id'])),
+                'Fan': '{0} %'.format(gpu['fan_speed'].split(' ')[0].strip()),
+                'Temp': '{0} C'.format(gpu['temperature']['current'].split(' ')[0].strip()),
+                'TempMax': '{0} C'.format(gpu['temperature']['max'].split(' ')[0].strip()),
+                'Pwr': '{0} W'.format(gpu['power']['current'].split(' ')[0].strip()),
+                'PwrMax': '{0} W'.format(gpu['power']['max'].split(' ')[0].strip()),
+                'Freq': '{0} MHz'.format(gpu['clocks']['current'].split(' ')[0].strip()),
+                'FreqMax': '{0} MHz'.format(gpu['clocks']['max'].split(' ')[0].strip()),
+                'Util': '{0} %'.format(gpu['utilization'].split(' ')[0]),
+                'Vmem': '{0}/{1} MiB'.format(
+                    gpu['memory']['used'].split(' ')[0].strip(),
+                    gpu['memory']['total'].split(' ')[0].strip(),
+                ),
+                'UsedMem': '{0} MiB'.format(gpu['memory']['used'].split(' ')[0].strip()),
+                'TotalMem': '{0} MiB'.format(gpu['memory']['total'].split(' ')[0].strip()),
+                'FreeMem': '{0} MiB'.format(gpu['memory']['free'].split(' ')[0].strip()),
+                'Users': process_info
+            }
+            gpu_infos.append(info_gpu)
+        align_methods = {key:'r' for key in gpu_infos[0]}
+        align_methods['Users'] = 'l'
+        if enabled_cols is None:
+            enabled_cols = list(align_methods.keys())
+        c_align = [align_methods[col] for col in enabled_cols]
+        info_table = [enabled_cols]
+        for info in gpu_infos:
+            this_row = [info[key] for key in enabled_cols]
+            info_table.append(this_row)
+        info = draw_table(info_table, header_line=0, delemeter=' | ', joint_delemeter='-+-', c_align=c_align)
+        if show_command:
             procs = {}
             for gpu in self.gpus:
                 for proc in gpu['processes']:
                     pid = proc['pid']
+                    proc['gpu'] = [str(gpu['id'])]
                     if pid not in procs:
                         procs[pid] = proc
-            proc_fmt = '[{pid}] {user}({vmem} MiB) {cmd}'
+                    else:
+                        procs[pid].append(gpu['id'])
+            proc_fmt = '[{pid}|{gpus}] {user}({vmem} MiB) {cmd}'
             proc_strs = []
             for pid in procs:
                 this_proc_str = proc_fmt.format(
                     user = procs[pid]['user'],
                     vmem = procs[pid]['vmem'].split(' ')[0],
-                    pid = procs[pid]['pid'], 
-                    cmd = procs[pid]['command']
+                    pid = procs[pid]['pid'].rjust(5), 
+                    cmd = procs[pid]['command'],
+                    gpus = ','.join(procs[pid]['gpu'])
                 )
                 proc_strs.append(this_proc_str)
             proc_info = '\n'.join(proc_strs)
-            print(proc_info)
+            info += proc_info
+        print(info)
 
 class MoreGPUNeededError(Exception):
     def __init__(self):
