@@ -1,8 +1,14 @@
+from io import StringIO
+from sys import platform
 import xml.etree.ElementTree as ET
 import os
 import json
 import random
 import sys
+import csv
+import platform
+
+osname = platform.system()
 
 
 def xml2dict(node):
@@ -127,7 +133,34 @@ def short_gpu_info(stat, disp_type='brief'):
         info += process_info
     return info
 
-def get_basic_process_info():
+def show_gpu_info_v2(stat, disp_type='brief'):
+    # for gpu information.
+    stats = {
+        "id": stat['id'],
+        "fan": stat['fan_speed'].split(' ')[0].strip(),
+        "temp_cur": stat['temperature']['current'].split(' ')[0].strip(),
+        "temp_max": stat['temperature']['max'].split(' ')[0].strip(),
+        "power_cur": stat['power']['current'].split(' ')[0].strip(),
+        "power_max": stat['power']['max'].split(' ')[0].strip(),
+        "clock_cur": stat['clocks']['current'].split(' ')[0].strip(),
+        "clock_max": stat['clocks']['max'].split(' ')[0].strip(),
+        "util": stat['utilization'],
+        "mem_used": stat['memory']['used'].split(' ')[0].strip(),
+        "mem_total": stat['memory']['total'].split(' ')[0].strip(),
+        "mem_free": stat['memory']['free'].split(' ')[0].strip()
+    }
+
+    gpu_stat_fmt = "{id} | {fan} | {temp_cur} | {power_cur} | {clock_cur} | {util} | {mem_used}/{mem_all}"
+    info = gpu_stat_fmt
+    for key in stats:
+        placeholder = '{%s}'%key
+        if info.find(placeholder) != -1:
+            info.replace(placeholder, stats[key])
+    return info
+    
+    
+
+def get_basic_process_info_linux():
     pipe = os.popen('ps axo user:20,pid,args:1024')
     output = pipe.read()
     lines = output.split('\n')[1:]
@@ -145,6 +178,22 @@ def get_basic_process_info():
         }
     return processes
 
+def get_basic_process_info_windows():
+    pipe = os.popen("tasklist /FO CSV")
+    content = StringIO(pipe.read())
+    reader = csv.reader(content, delimiter=',', quotechar='"')
+    content = []
+    for row in reader:
+        content.append(list(row))
+    processes = {}
+    for line in content[1:]:
+        name, pid, _, _, _ = line
+        processes[pid] = {
+            "user": None,
+            "command": name
+        }
+    return processes
+
 class GPUStat():
     def __init__(self):
         self.gpus = []
@@ -155,6 +204,11 @@ class GPUStat():
         self.cuda_version = ''
         self.attached_gpus = ''
         self.driver_version = ''
+    def get_process_info(self):
+        if osname == 'Windows':
+            return get_basic_process_info_windows()
+        elif osname == 'Linux':
+            return get_basic_process_info_linux()
     def parse(self):
         self.raw_info = parse_nvsmi_info('nvidia-smi -q -x')
         self.detailed_info = {}
@@ -165,7 +219,7 @@ class GPUStat():
                 if type(value) is not list:
                     value = [value]
                 self.detailed_info[key] = [parse_gpu_info(info) for info in value]
-        self.process_info = get_basic_process_info()
+        self.process_info = self.get_process_info()
         self.simplified_info = {
             "driver_version": self.detailed_info["driver_version"],
             "cuda_version": self.detailed_info["cuda_version"],
@@ -285,3 +339,5 @@ def auto_set(num, allow_nonfree=True, ask=True, blacklist=[], show=True):
         raise MoreGPUNeededError
     set_gpu(selected_gpu, show=show)
     
+if __name__ == '__main__':
+    print(get_basic_process_info_windows())
