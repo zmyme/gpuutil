@@ -6,23 +6,39 @@ A naive tool for observing gpu status and auto set visible gpu in python code.
 
 1. install the package.
 ```
-pip install https://git.zmy.pub/zmyme/gpuutil/archive/v0.0.1.tar.gz
+pip install https://git.zmy.pub/zmyme/gpuutil/archive/v0.0.2.tar.gz
 ```
 
 2. for observing gpu status, just input
 ```
 python -m gpuutil <options>
 ```
-where options can either be "brief" or "detail", and you will get something like
+when directly running ```python -m gpuutil```, you would probably get:
 ```
-================== GPU INFO ==================
-[0] Utils: 94 % | Mem: 10166/11019 MiB(853MiB free)  user1(10163MiB,pid=14018)
-[1] Utils: 89 % | Mem: 6690/11019 MiB(4329MiB free)  user2(6687MiB,pid=19855)
-[2] Utils: 0 % | Mem: 1/11019 MiB(11018MiB free)
-[3] Utils: 0 % | Mem: 1/11019 MiB(11018MiB free)
-================ PROCESS INFO ================
-[14018] user1(10163 MiB) python train.py --some -args
-[19855] user2(6687 MiB) python train.py --some --different --args
++---+------+------+---------+---------+------+---------------+
+|ID | Fan  | Temp |   Pwr   |   Freq  | Util |      Vmem     |
++---+------+------+---------+---------+------+---------------+
+| 0 | 22 % | 33 C |  4.47 W | 300 MHz |  0 % | 1569/11019 MiB|
+| 1 | 22 % | 35 C |  3.87 W | 300 MHz |  0 % |    3/11019 MiB|
+| 2 | 22 % | 36 C |  8.22 W | 300 MHz |  0 % |    3/11019 MiB|
+| 3 | 22 % | 36 C | 21.82 W | 300 MHz |  0 % |    3/11019 MiB|
++---+------+------+---------+---------+------+---------------+
+[34860|0] user1(783 MiB) python train.py --some -args
+[38694|0] user2(783 MiB) python train.py --some --other -args
+```
+To get more information, run ```python -m gpuutil -h```, you would get:
+```
+python __main__.py -h 
+usage: __main__.py [-h] [--profile PROFILE] [--cols COLS] [--show-process SHOW_PROCESS] [--save]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --profile PROFILE, -p PROFILE
+                        profile keyword, corresponding configuration are saved in ~/.gpuutil.conf
+  --cols COLS, -c COLS  colums to show
+  --show-process SHOW_PROCESS, -sp SHOW_PROCESS
+                        whether show process or not
+  --save                save config to profile
 ```
 
 3. To auto set visible gpu in your python code, just use the following python code.

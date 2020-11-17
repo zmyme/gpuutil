@@ -11,6 +11,6 @@ setup(
     author_email = 'izmy@qq.com',
     packages = find_packages(),
     include_package_data = True,
-    platforms = 'Linux',
+    platforms = 'All',
     install_requires = [],
 )
