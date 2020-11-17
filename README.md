@@ -5,16 +5,16 @@ A naive tool for observing gpu status and auto set visible gpu in python code.
 ## How to use
 
 1. install the package.
-```
+```shell
 pip install https://git.zmy.pub/zmyme/gpuutil/archive/v0.0.2.tar.gz
 ```
 
 2. for observing gpu status, just input
-```
+```shell
 python -m gpuutil <options>
 ```
 when directly running ```python -m gpuutil```, you would probably get:
-```
+```text
 +---+------+------+---------+---------+------+---------------+
 |ID | Fan  | Temp |   Pwr   |   Freq  | Util |      Vmem     |
 +---+------+------+---------+---------+------+---------------+
@@ -27,7 +27,7 @@ when directly running ```python -m gpuutil```, you would probably get:
 [38694|0] user2(783 MiB) python train.py --some --other -args
 ```
 To get more information, run ```python -m gpuutil -h```, you would get:
-```
+```text
 python __main__.py -h 
 usage: __main__.py [-h] [--profile PROFILE] [--cols COLS] [--show-process SHOW_PROCESS] [--save]
 
