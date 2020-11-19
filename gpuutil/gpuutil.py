@@ -317,7 +317,7 @@ class GPUStat():
                     if pid not in procs:
                         procs[pid] = proc
                     else:
-                        procs[pid]['gpu'].append(gpu['id'])
+                        procs[pid]['gpu'].append(str(gpu['id']))
             proc_fmt = '[{pid}|{gpus}] {user}({vmem} MiB) {cmd}'
             proc_strs = []
             for pid in procs:
