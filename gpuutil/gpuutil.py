@@ -127,12 +127,12 @@ def short_gpu_info(stat, disp_type='brief'):
             util=stat_disp['util'],
             mem=stat_disp['mem']
         )
-    
+
     if len(process_info) > 0:
         info += '  '
         info += process_info
     return info
-    
+
 
 def get_basic_process_info_linux():
     pipe = os.popen('ps axo user:20,pid,args:1024')
@@ -210,7 +210,7 @@ def draw_table(table, header_line = 0, c_align = 'r', h_align='c', delemeter = '
             info += hline
     info +=  hline
     return info
-    
+
 
 
 class GPUStat():
@@ -317,14 +317,14 @@ class GPUStat():
                     if pid not in procs:
                         procs[pid] = proc
                     else:
-                        procs[pid].append(gpu['id'])
+                        procs[pid]['gpu'].append(gpu['id'])
             proc_fmt = '[{pid}|{gpus}] {user}({vmem} MiB) {cmd}'
             proc_strs = []
             for pid in procs:
                 this_proc_str = proc_fmt.format(
                     user = procs[pid]['user'],
                     vmem = procs[pid]['vmem'].split(' ')[0],
-                    pid = procs[pid]['pid'].rjust(5), 
+                    pid = procs[pid]['pid'].rjust(5),
                     cmd = procs[pid]['command'],
                     gpus = ','.join(procs[pid]['gpu'])
                 )
@@ -409,6 +409,6 @@ def auto_set(num, allow_nonfree=True, ask=True, blacklist=[], show=True):
     else:
         raise MoreGPUNeededError
     set_gpu(selected_gpu, show=show)
-    
+
 if __name__ == '__main__':
     print(get_basic_process_info_windows())
