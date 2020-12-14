@@ -195,7 +195,7 @@ def draw_table(table, rowsty=None, colsty=None, colsz = None):
     for row in table:
         for i, col in enumerate(row):
             col = str(col)
-            width = len(col)
+            width = max([len(c) for c in col.split('\n')])
             if colsz[i] is not None and colsz[i] < width:
                 width = colsz[i]
             if width > col_width[i]:
@@ -204,7 +204,8 @@ def draw_table(table, rowsty=None, colsty=None, colsz = None):
     vline = []
     colaligns = []
     col_pos = 0
-    delemeter = ' '
+    line_delemeter = '-'
+    content_delemeter = ' '
     for ch in colsty:
         if ch == '|':
             vline.append('+')
@@ -212,7 +213,7 @@ def draw_table(table, rowsty=None, colsty=None, colsz = None):
             colaligns.append(ch)
             vline.append('-' * col_width[col_pos])
             col_pos += 1
-    vline = delemeter.join(vline)
+    vline = line_delemeter.join(vline)
     table_to_draw = []
     row_pos = 0
     for ch in rowsty:
@@ -253,7 +254,7 @@ def draw_table(table, rowsty=None, colsty=None, colsz = None):
                 elif ch in ['c', 'r', 'l']:
                     cols_to_drawn.append(row[col_pos])
                     col_pos += 1
-            strings.append(delemeter.join(cols_to_drawn))
+            strings.append(content_delemeter.join(cols_to_drawn))
     return '\n'.join(strings)
 
 class GPUStat():
@@ -298,7 +299,7 @@ class GPUStat():
             gpu['id'] = i
             self.gpus.append(gpu)
 
-    def show(self, enabled_cols = ['ID', 'Fan', 'Temp', 'Pwr', 'Freq', 'Util', 'Vmem', 'Users'], colsty=None, colsz=None, show_command=True):
+    def show(self, enabled_cols = ['ID', 'Fan', 'Temp', 'Pwr', 'Freq', 'Util', 'Vmem', 'Users'], colsty=None, colsz=None, show_command=True, vertical=False):
         self.parse()
         gpu_infos = []
         # stats = {
@@ -329,7 +330,10 @@ class GPUStat():
                 if user not in users_process:
                     users_process[user] = []
                 users_process[user].append(pid)
-            process_info = ','.join(process_fmt.format(user=user, pids = '|'.join(users_process[user])) for user in users_process)
+            delemeter = ','
+            if vertical:
+                delemeter = '\n'
+            process_info = delemeter.join(process_fmt.format(user=user, pids = '|'.join(users_process[user])) for user in users_process)
             info_gpu = {
                 'ID': '{0}'.format(str(gpu['id'])),
                 'Fan': '{0} %'.format(gpu['fan_speed'].split(' ')[0].strip()),
@@ -359,23 +363,26 @@ class GPUStat():
         for info in gpu_infos:
             this_row = [info[key] for key in enabled_cols]
             info_table.append(this_row)
-        info = draw_table(info_table, rowsty='|c|{0}|'.format('c'*(len(info_table)-1)), colsty=colsty, colsz=colsz)
+        info = draw_table(info_table, rowsty='|c|{0}|'.format('c'*(len(info_table)-1)), colsty=colsty, colsz=colsz) + '\n'
         if show_command:
             procs = {}
             for gpu in self.gpus:
                 for proc in gpu['processes']:
                     pid = proc['pid']
                     proc['gpu'] = [str(gpu['id'])]
+                    if type(proc['vmem']) is str:
+                        proc['vmem'] = int(proc['vmem'].split(' ')[0])
                     if pid not in procs:
                         procs[pid] = proc
                     else:
                         procs[pid]['gpu'].append(str(gpu['id']))
+                        procs[pid]['vmem'] += proc['vmem']
             proc_fmt = '[{pid}|{gpus}] {user}({vmem} MiB) {cmd}'
             proc_strs = []
             for pid in procs:
                 this_proc_str = proc_fmt.format(
                     user = procs[pid]['user'],
-                    vmem = procs[pid]['vmem'].split(' ')[0],
+                    vmem = procs[pid]['vmem'],
                     pid = procs[pid]['pid'].rjust(5),
                     cmd = procs[pid]['command'],
                     gpus = ','.join(procs[pid]['gpu'])

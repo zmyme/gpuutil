@@ -28,6 +28,8 @@ def save_config(config):
 
 # style format: |c|l:15|r|c:14rl:13|
 def parse_style(style):
+    if style is None:
+        return None, None
     components = []
     limits = []
     while len(style) > 0:
@@ -60,14 +62,16 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--profile', '-p', default=None, type=str, help='profile keyword, corresponding configuration are saved in ~/.gpuutil.conf')
-    parser.add_argument('--cols', '-c', type=csv2list, help='colums to show')
-    parser.add_argument('--style', '-sty', type=parse_style, help='column style')
+    parser.add_argument('--cols', '-c', type=csv2list, help='colums to show.(Availabel cols: {0}'.format(avaliable_cols))
+    parser.add_argument('--style', '-sty', type=str, default=None, help='column style, format: |c|l:15|r|c:14rl:13|, c,l,r are align methods, | is line and :(int) are width limit.')
     parser.add_argument('--show-process', '-sp', default=True, type=str2bool, help='whether show process or not')
+    parser.add_argument('--vertical', '-v', default=False, type=str2bool, help='whether show each user in different lines. (show user vertically)')
     parser.add_argument('--save', default=False, action="store_true", help='save config to profile')
     args = parser.parse_args()
     cols = args.cols if args.cols is not None else recommended_cols
     show_process = args.show_process
-    style, limit = args.style
+    style, limit = parse_style(args.style)
+    vertical = args.vertical
     unexpected_cols = []
     for col in cols:
         if col not in avaliable_cols:
@@ -78,9 +82,10 @@ if __name__ == '__main__':
     if args.save:
         params = {
             "cols": cols,
-            "show-process": show_process,
             "style": style,
-            "limit": limit
+            "limit": limit,
+            "show-process": show_process,
+            "vertical": vertical
         }
         profile = args.profile if args.profile is not None else input('Please input your profile name:\n>>> ')
         config = load_config()
@@ -94,11 +99,14 @@ if __name__ == '__main__':
             show_process = params["show-process"]
             style = None
             limit = None
+            vertical = False
             if "style" in params:
                 style = params["style"]
             if "limit" in params:
                 limit = params["limit"]
+            if "vertical" in params:
+                vertical = params["vertical"]
 
         else:
             raise ValueError('Profile do not exist.\nAvaliable Profiles:{0}'.format(','.join(list(config.keys()))))
-    stat.show(enabled_cols = cols, colsty=style, colsz=limit, show_command=show_process)
+    stat.show(enabled_cols = cols, colsty=style, colsz=limit, vertical=vertical, show_command=show_process)
