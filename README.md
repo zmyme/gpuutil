@@ -6,7 +6,7 @@ A naive tool for observing gpu status and auto set visible gpu in python code.
 
 1. install the package.
 ```shell
-pip install https://git.zmy.pub/zmyme/gpuutil/archive/v0.0.2.tar.gz
+pip install https://git.zmy.pub/zmyme/gpuutil/archive/v0.0.3.tar.gz
 ```
 
 2. for observing gpu status, just input
@@ -15,29 +15,45 @@ python -m gpuutil <options>
 ```
 when directly running ```python -m gpuutil```, you would probably get:
 ```text
-+---+------+------+---------+---------+------+---------------+
-|ID | Fan  | Temp |   Pwr   |   Freq  | Util |      Vmem     |
-+---+------+------+---------+---------+------+---------------+
-| 0 | 22 % | 33 C |  4.47 W | 300 MHz |  0 % | 1569/11019 MiB|
-| 1 | 22 % | 35 C |  3.87 W | 300 MHz |  0 % |    3/11019 MiB|
-| 2 | 22 % | 36 C |  8.22 W | 300 MHz |  0 % |    3/11019 MiB|
-| 3 | 22 % | 36 C | 21.82 W | 300 MHz |  0 % |    3/11019 MiB|
-+---+------+------+---------+---------+------+---------------+
-[34860|0] user1(783 MiB) python train.py --some -args
-[38694|0] user2(783 MiB) python train.py --some --other -args
++----+------+------+----------+----------+------+----------------+
+| ID | Fan  | Temp |   Pwr    |   Freq   | Util |      Vmem      |
++----+------+------+----------+----------+------+----------------+
+| 0  | 22 % | 21 C |  9.11 W  | 300 MHz  | 0 %  | 3089/11019 MiB |
+| 1  | 22 % | 23 C |  6.28 W  | 300 MHz  | 0 %  | 786/11019 MiB  |
+| 2  | 38 % | 59 C | 92.04 W  | 1890 MHz | 6 %  | 3608/11019 MiB |
+| 3  | 40 % | 67 C | 246.38 W | 1740 MHz | 93 % | 3598/11019 MiB |
++----+------+------+----------+----------+------+----------------+
+|                          Process Info                          |
++----------------------------------------------------------------+
+| [26107|0] user1(737 MiB) python                                |
+| [34033|0,1] user2(1566 MiB) python                             |
+| [37190|0] user2(783 MiB) python                                |
+| [37260|0] user2(783 MiB) python                                |
+| [30356|2] user3(3605 MiB) python train.py --args --some really |
+| long arguments                                                 |
+| [34922|3] user3(3595 MiB) python train.py --args --some really |
+| long arguments version 2                                       |
++----------------------------------------------------------------+
 ```
 To get more information, run ```python -m gpuutil -h```, you would get:
 ```text
-python __main__.py -h 
-usage: __main__.py [-h] [--profile PROFILE] [--cols COLS] [--show-process SHOW_PROCESS] [--save]
+usage: __main__.py [-h] [--profile PROFILE] [--cols COLS] [--style STYLE]
+                   [--show-process SHOW_PROCESS] [--vertical VERTICAL] [--save]
 
 optional arguments:
   -h, --help            show this help message and exit
   --profile PROFILE, -p PROFILE
                         profile keyword, corresponding configuration are saved in ~/.gpuutil.conf
-  --cols COLS, -c COLS  colums to show
+  --cols COLS, -c COLS  colums to show.(Availabel cols: ['ID', 'Fan', 'Temp', 'TempMax', 'Pwr',
+                        'PwrMax', 'Freq', 'FreqMax', 'Util', 'Vmem', 'UsedMem', 'TotalMem', 'FreeMem',
+                        'Users']
+  --style STYLE, -sty STYLE
+                        column style, format: |c|l:15|r|c:14rl:13|, c,l,r are align methods, | is line
+                        and :(int) are width limit.
   --show-process SHOW_PROCESS, -sp SHOW_PROCESS
                         whether show process or not
+  --vertical VERTICAL, -v VERTICAL
+                        whether show each user in different lines. (show user vertically)
   --save                save config to profile
 ```
 
