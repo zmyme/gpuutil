@@ -389,6 +389,8 @@ class GPUStat():
                 )
                 proc_strs.append(this_proc_str)
             proc_info = '\n'.join(proc_strs)
+            table_width = info.find('\n')
+            proc_info = draw_table([['Process Info'.center(table_width-4)], [proc_info]], rowsty="c|c|", colsty="|l|", colsz=[table_width-4])
             info += proc_info
         print(info)
 
