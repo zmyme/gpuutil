@@ -168,50 +168,93 @@ def get_basic_process_info_windows():
         }
     return processes
 
-def draw_table(table, header_line = 0, c_align = 'r', h_align='c', delemeter = ' | ', joint_delemeter = '-+-'):
-    # calculate max lengths.
-    num_columns = len(table[0])
-    def cvt_align(align, num_columns):
-        if type(align) is str:
-            if len(align) == 1:
-                return [align] * num_columns
-            elif len(align) == num_columns:
-                return list(align)
-            else:
-                raise ValueError('align flag length mismatch')
-        else:
-            return align
-    c_align = cvt_align(c_align, num_columns)
-    h_align = cvt_align(h_align, num_columns)
-    max_lengths = [0] * num_columns
+def draw_table(table, rowsty=None, colsty=None, colsz = None):
+    def justify(s, align, width):
+        if align == 'c':
+            s = s.center(width)
+        elif align == 'r':
+            s = s.rjust(width)
+        elif align == 'l':
+            s = s.ljust(width)
+        return s
+
+    num_cols = len(table[0])
+    if rowsty is None:
+        rowsty = '|' + '|'.join(['c']*len(table)) + '|'
+    if colsty is None:
+        colsty = '|' + '|'.join(['c']*num_cols) + '|'
+    # check tables.
+    for row in table:
+        if len(row) != num_cols:
+            raise ValueError('different cols!')
+    col_width = [0] * num_cols
+    if colsz is None:
+        colsz = [None] * num_cols
+    
+    # collect widths.
     for row in table:
         for i, col in enumerate(row):
-            if len(col) > max_lengths[i]:
-                max_lengths[i] = len(col)
-    width = sum(max_lengths) + num_columns * len(delemeter) + 1
-    hline = '+'
-    hline += joint_delemeter.join(['-' * length for length in max_lengths])
-    hline += '+\n'
-    info =  hline
-    for i, row in enumerate(table):
-        info += '|'
-        row_just = []
-        align = h_align if i <= header_line else c_align
-        for w, col, a in zip(max_lengths, row, align):
-            if a == 'c':
-                row_just.append(col.center(w))
-            elif a == 'l':
-                row_just.append(col.ljust(w))
-            elif a == 'r':
-                row_just.append(col.rjust(w))
-        info += delemeter.join(row_just)
-        info += '|\n'
-        if i == header_line:
-            info += hline
-    info +=  hline
-    return info
-
-
+            col = str(col)
+            width = len(col)
+            if colsz[i] is not None and colsz[i] < width:
+                width = colsz[i]
+            if width > col_width[i]:
+                col_width[i] = width
+    # prepare vline.
+    vline = []
+    colaligns = []
+    col_pos = 0
+    delemeter = ' '
+    for ch in colsty:
+        if ch == '|':
+            vline.append('+')
+        elif ch in ['c', 'l', 'r']:
+            colaligns.append(ch)
+            vline.append('-' * col_width[col_pos])
+            col_pos += 1
+    vline = delemeter.join(vline)
+    table_to_draw = []
+    row_pos = 0
+    for ch in rowsty:
+        if ch == '|':
+            table_to_draw.append("vline")
+        elif ch in ['c', 'l', 'r']:
+            table_to_draw.append(table[row_pos])
+            row_pos += 1;
+    strings = []
+    for row in table_to_draw:
+        if type(row) is str:
+            strings.append(vline)
+            continue
+        new_row = []
+        max_cols = 1
+        for word, align, width in zip(row, colaligns, col_width):
+            cols = []
+            lines = word.split('\n')
+            for line in lines:
+                while len(line) > 0:
+                    cols.append(line[:width])
+                    line = line[width:]
+            cols = [justify(col, align, width) for col in cols]
+            if len(cols) > max_cols:
+                max_cols = len(cols)
+            new_row.append(cols)
+        for cols, width in zip(new_row, col_width):
+            empty = ' ' * width
+            while len(cols) < max_cols:
+                cols.append(empty)
+        rows = list(zip(*new_row))
+        for row in rows:
+            cols_to_drawn = []
+            col_pos = 0
+            for ch in colsty:
+                if ch == '|':
+                    cols_to_drawn.append('|')
+                elif ch in ['c', 'r', 'l']:
+                    cols_to_drawn.append(row[col_pos])
+                    col_pos += 1
+            strings.append(delemeter.join(cols_to_drawn))
+    return '\n'.join(strings)
 
 class GPUStat():
     def __init__(self):
@@ -255,7 +298,7 @@ class GPUStat():
             gpu['id'] = i
             self.gpus.append(gpu)
 
-    def show(self, enabled_cols = ['ID', 'Fan', 'Temp', 'Pwr', 'Freq', 'Util', 'Vmem', 'Users'], show_command=True):
+    def show(self, enabled_cols = ['ID', 'Fan', 'Temp', 'Pwr', 'Freq', 'Util', 'Vmem', 'Users'], colsty=None, colsz=None, show_command=True):
         self.parse()
         gpu_infos = []
         # stats = {
@@ -273,11 +316,20 @@ class GPUStat():
         #     "mem_free":  stat['memory']['free'].split(' ')[0].strip()
         # }
         for gpu in self.gpus:
-            process_fmt = '{user}({pid})'
-            process_info = ','.join([process_fmt.format(
-                user = proc['user'],
+            # process_fmt = '{user}({pid})'
+            # process_info = ','.join([process_fmt.format(
+            #     user = proc['user'],
+            #     pid = proc['pid']
+            # ) for proc in gpu['processes']])
+            process_fmt = '{user}({pids})'
+            users_process = {}
+            for proc in gpu['processes']:
+                user = proc['user']
                 pid = proc['pid']
-            ) for proc in gpu['processes']])
+                if user not in users_process:
+                    users_process[user] = []
+                users_process[user].append(pid)
+            process_info = ','.join(process_fmt.format(user=user, pids = '|'.join(users_process[user])) for user in users_process)
             info_gpu = {
                 'ID': '{0}'.format(str(gpu['id'])),
                 'Fan': '{0} %'.format(gpu['fan_speed'].split(' ')[0].strip()),
@@ -307,7 +359,7 @@ class GPUStat():
         for info in gpu_infos:
             this_row = [info[key] for key in enabled_cols]
             info_table.append(this_row)
-        info = draw_table(info_table, header_line=0, delemeter=' | ', joint_delemeter='-+-', c_align=c_align)
+        info = draw_table(info_table, rowsty='|c|{0}|'.format('c'*(len(info_table)-1)), colsty=colsty, colsz=colsz)
         if show_command:
             procs = {}
             for gpu in self.gpus:
