@@ -283,12 +283,12 @@ class GPUStat():
                     value = [value]
                 self.detailed_info[key] = [parse_gpu_info(info) for info in value]
         self.process_info = self.get_process_info()
-        self.simplified_info = {
-            "driver_version": self.detailed_info["driver_version"],
-            "cuda_version": self.detailed_info["cuda_version"],
-            "attached_gpus": self.detailed_info["attached_gpus"],
-            "gpus": [simplify_gpu_info(stat) for stat in self.detailed_info["gpu"]]
-        }
+        self.simplified_info = {}
+        for key in self.detailed_info:
+            if key != "gpu":
+                self.simplified_info[key] = self.detailed_info[key]
+            else:
+                self.simplified_info[key] = [simplify_gpu_info(stat) for stat in self.detailed_info["gpu"]]
         self.cuda_version = self.simplified_info["cuda_version"]
         self.driver_version = self.simplified_info["driver_version"]
         self.attached_gpus = self.simplified_info["attached_gpus"]
