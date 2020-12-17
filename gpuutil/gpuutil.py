@@ -288,10 +288,13 @@ class GPUStat():
             if key != "gpu":
                 self.simplified_info[key] = self.detailed_info[key]
             else:
-                self.simplified_info[key] = [simplify_gpu_info(stat) for stat in self.detailed_info["gpu"]]
-        self.cuda_version = self.simplified_info["cuda_version"]
-        self.driver_version = self.simplified_info["driver_version"]
-        self.attached_gpus = self.simplified_info["attached_gpus"]
+                self.simplified_info["gpus"] = [simplify_gpu_info(stat) for stat in self.detailed_info["gpu"]]
+        if "cuda_version" in self.simplified_info:
+            self.cuda_version = self.simplified_info["cuda_version"]
+        if "driver_version" in self.simplified_info:
+            self.driver_version = self.simplified_info["driver_version"]
+        if "attached_gpus" in self.simplified_info:
+            self.attached_gpus = self.simplified_info["attached_gpus"]
         self.gpus = []
         for i, gpu in enumerate(self.simplified_info["gpus"]):
             for process in gpu['processes']:
