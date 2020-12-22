@@ -10,6 +10,13 @@ import platform
 
 osname = platform.system()
 
+def loadfile(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        return f.read()
+
+def exe_cmd(command):
+    pipe = os.popen(command)
+    return pipe.read()
 
 def xml2dict(node):
     node_dict = {}
@@ -25,10 +32,8 @@ def xml2dict(node):
             node_dict[child.tag].append(xml2dict(child))
     return node_dict
 
-def parse_nvsmi_info(command='nvidia-smi -q -x'):
-    pipe = os.popen(command)
-    xml = pipe.read()
-    tree = ET.fromstring(xml)
+def parse_nvsmi_info(nvsmixml):
+    tree = ET.fromstring(nvsmixml)
     return xml2dict(tree)
 
 def parse_gpu_info(stat):
@@ -168,6 +173,39 @@ def get_basic_process_info_windows():
         }
     return processes
 
+def get_basic_process_info_by_file(filepath, col_name_trans=None):
+    # suppose cmd is always at the last, and the previous lines have no space.
+    content = loadfile(filepath)
+    lines = content.split('\n')
+    header = lines[0].split(' ')
+    header = [w.strip() for w in header]
+    header = [w for w in header if w != '']
+    interested = {
+        'user': None,
+        'pid': None,
+        'cmd': None
+    }
+    if col_name_trans is None:
+        col_name_trans = {'command': 'cmd'}
+    for i, word in enumerate(header):
+        word = word.lower()
+        if word in col_name_trans:
+            word = col_name_trans[word]
+        if word in interested:
+            interested[word] = i
+    processes = {}
+    for line in lines[1:]:
+        words = line.split(' ')
+        pid = words[interested['pid']]
+        user = words[interested['user']]
+        cmd = ' '.join(words[interested['cmd']:])
+        processes[pid] = {
+            "user": user,
+            "command": cmd
+        }
+    return processes
+
+
 def draw_table(table, rowsty=None, colsty=None, colsz = None):
     def justify(s, align, width):
         if align == 'c':
@@ -267,13 +305,38 @@ class GPUStat():
         self.cuda_version = ''
         self.attached_gpus = ''
         self.driver_version = ''
+        self.nvsmi_source = None
+        self.ps_source = None
+        self.ps_name_trans = None
+        self.load_configure()
+    def load_configure(self):
+        configuration_path = os.path.expanduser('~/.gpuutil.conf')
+        if not os.path.exists(configuration_path):
+            os.system('touch {0}'.format(configuration_path))
+        else:
+            with open(configuration_path, 'r', encoding='utf-8') as f:
+                configuration = json.load(f)
+                if 'redirect' in configuration:
+                    if 'nvsmi_src' in configuration['redirect']:
+                        self.nvsmi_source = configuration['redirect']['nvsmi_src']
+                    if 'ps_src' in configuration['redirect']:
+                        self.ps_source = configuration['redirect']['ps_src']
+                    if 'ps_name_trans' in configuration['redirect']:
+                        self.ps_name_trans = configuration['redirect']['ps_name_trans']
+
+            
     def get_process_info(self):
+        if self.ps_source is not None:
+            return get_basic_process_info_by_file(self.ps_source, self.ps_name_trans)
         if osname == 'Windows':
             return get_basic_process_info_windows()
         elif osname == 'Linux':
             return get_basic_process_info_linux()
     def parse(self):
-        self.raw_info = parse_nvsmi_info('nvidia-smi -q -x')
+        if self.nvsmi_source is None:
+            self.raw_info = parse_nvsmi_info(exe_cmd('nvidia-smi -q -x'))
+        else:
+            self.raw_info = parse_nvsmi_info(loadfile(self.nvsmi_source))
         self.detailed_info = {}
         for key, value in self.raw_info.items():
             if key != 'gpu':
