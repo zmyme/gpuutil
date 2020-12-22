@@ -1,6 +1,6 @@
 import argparse
 import os
-from gpuutil import loaddict
+from gpuutil import loaddict, savedict
 
 availabel_name_trans = ['command', 'user', 'pid']
 
@@ -39,5 +39,4 @@ configuration['redirect'] = {
     "ps_name_trans": parsed_name_trans
 }
 
-with open(config_file, 'w+', encoding='utf-8') as f:
-    f.write(json.dumps(configuration, ensure_ascii=False, indent=4))
+savedict(config_file, configuration)

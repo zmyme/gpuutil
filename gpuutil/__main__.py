@@ -1,6 +1,5 @@
-from gpuutil import GPUStat, loaddict
+from gpuutil import GPUStat, loaddict, savedict
 import sys
-import json
 import argparse
 import os
 
@@ -22,8 +21,7 @@ def load_config():
 def save_config(config):
     home_dir = os.path.expanduser('~')
     configdir = os.path.join(home_dir, '.gpuutil.conf')
-    with open(configdir, 'w+', encoding='utf-8') as f:
-        json.dump(config, f, ensure_ascii=False, indent=4)
+    savedict(configdir, config)
 
 # style format: |c|l:15|r|c:14rl:13|
 def parse_style(style):

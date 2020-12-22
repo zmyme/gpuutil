@@ -13,6 +13,9 @@ osname = platform.system()
 def loadfile(path):
     with open(path, 'r', encoding='utf-8') as f:
         return f.read()
+def savefile(path, content):
+    with open(path, 'w+', encoding='utf-8') as f:
+        return f.write(content)
 
 def loaddict(path):
     content = loadfile(path)
@@ -21,6 +24,9 @@ def loaddict(path):
         return json.loads(content)
     else:
         return {}
+def savedict(path, dictionary):
+    content = json.dumps(dictionary, indent=4, ensure_ascii=False)
+    savefile(path, content)
 
 def exe_cmd(command):
     pipe = os.popen(command)
