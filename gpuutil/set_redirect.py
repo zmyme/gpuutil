@@ -2,7 +2,7 @@ import argparse
 import os
 import json
 
-availabel_name_trans = ['cmd', 'user', 'pid']
+availabel_name_trans = ['command', 'user', 'pid']
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--nvsmi', '-nv', default=None, type=str, help='a file indicates real nvidia-smi -q -x output.')
@@ -25,7 +25,7 @@ if name_trans is not None:
         if len(item) != 2:
             raise ValueError('there must be a = in nametrans')
         key, value = item
-        if value not in avaliable_name_trans:
+        if value not in availabel_name_trans:
             raise ValueError('given buildin name {0} do not exist, avaliable: {1}'.format(value, ','.join(availabel_name_trans)))
         parsed_name_trans[key] = value
 

@@ -183,10 +183,10 @@ def get_basic_process_info_by_file(filepath, col_name_trans=None):
     interested = {
         'user': None,
         'pid': None,
-        'cmd': None
+        'command': None
     }
     if col_name_trans is None:
-        col_name_trans = {'command': 'cmd'}
+        col_name_trans = {'cmd': 'command'}
     for i, word in enumerate(header):
         word = word.lower()
         if word in col_name_trans:
@@ -198,7 +198,7 @@ def get_basic_process_info_by_file(filepath, col_name_trans=None):
         words = line.split(' ')
         pid = words[interested['pid']]
         user = words[interested['user']]
-        cmd = ' '.join(words[interested['cmd']:])
+        cmd = ' '.join(words[interested['command']:])
         processes[pid] = {
             "user": user,
             "command": cmd
