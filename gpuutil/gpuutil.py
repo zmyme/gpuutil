@@ -14,6 +14,14 @@ def loadfile(path):
     with open(path, 'r', encoding='utf-8') as f:
         return f.read()
 
+def loaddict(path):
+    content = loadfile(path)
+    content = content.strip()
+    if len(content) != 0:
+        return json.loads(content)
+    else:
+        return {}
+
 def exe_cmd(command):
     pipe = os.popen(command)
     return pipe.read()
@@ -311,16 +319,15 @@ class GPUStat():
         self.load_configure()
     def load_configure(self):
         configuration_path = os.path.expanduser('~/.gpuutil.conf')
-        if os.path.exists(configuration_path):
-            with open(configuration_path, 'r', encoding='utf-8') as f:
-                configuration = json.load(f)
-                if 'redirect' in configuration:
-                    if 'nvsmi_src' in configuration['redirect']:
-                        self.nvsmi_source = configuration['redirect']['nvsmi_src']
-                    if 'ps_src' in configuration['redirect']:
-                        self.ps_source = configuration['redirect']['ps_src']
-                    if 'ps_name_trans' in configuration['redirect']:
-                        self.ps_name_trans = configuration['redirect']['ps_name_trans']
+        if os.path.isfile(configuration_path):
+            configuration = loaddict(configuration_path)
+            if 'redirect' in configuration:
+                if 'nvsmi_src' in configuration['redirect']:
+                    self.nvsmi_source = configuration['redirect']['nvsmi_src']
+                if 'ps_src' in configuration['redirect']:
+                    self.ps_source = configuration['redirect']['ps_src']
+                if 'ps_name_trans' in configuration['redirect']:
+                    self.ps_name_trans = configuration['redirect']['ps_name_trans']
 
             
     def get_process_info(self):

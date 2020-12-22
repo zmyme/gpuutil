@@ -1,6 +1,6 @@
 import argparse
 import os
-import json
+from gpuutil import loaddict
 
 availabel_name_trans = ['command', 'user', 'pid']
 
@@ -32,8 +32,7 @@ if name_trans is not None:
 config_file = os.path.expanduser('~/.gpuutil.conf')
 configuration = {}
 if os.path.isfile(config_file):
-    with open(config_file, 'r', encoding='utf-8') as f:
-        configuration = json.load(f)
+    configuration = loaddict(config_file)
 configuration['redirect'] = {
     "nvsmi_src": args.nvsmi,
     "ps_src": args.ps,

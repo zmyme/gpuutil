@@ -1,4 +1,4 @@
-from gpuutil import GPUStat
+from gpuutil import GPUStat, loaddict
 import sys
 import json
 import argparse
@@ -18,8 +18,7 @@ def load_config():
     configpath = os.path.join(home_dir, '.gpuutil.conf')
     if not os.path.isfile(configpath):
         return {}
-    with open(configpath, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    return loaddict(configpath)
 def save_config(config):
     home_dir = os.path.expanduser('~')
     configdir = os.path.join(home_dir, '.gpuutil.conf')
