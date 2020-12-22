@@ -6,7 +6,7 @@ A naive tool for observing gpu status and auto set visible gpu in python code.
 
 1. install the package.
 ```shell
-pip install https://git.zmy.pub/zmyme/gpuutil/archive/v0.0.3.tar.gz
+pip install https://git.zmy.pub/zmyme/gpuutil/archive/v0.0.4.tar.gz
 ```
 
 2. for observing gpu status, just input
