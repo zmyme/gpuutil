@@ -311,9 +311,7 @@ class GPUStat():
         self.load_configure()
     def load_configure(self):
         configuration_path = os.path.expanduser('~/.gpuutil.conf')
-        if not os.path.exists(configuration_path):
-            os.system('touch {0}'.format(configuration_path))
-        else:
+        if os.path.exists(configuration_path):
             with open(configuration_path, 'r', encoding='utf-8') as f:
                 configuration = json.load(f)
                 if 'redirect' in configuration:
